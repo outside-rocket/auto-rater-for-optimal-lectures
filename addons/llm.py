@@ -5,6 +5,7 @@ from datetime import datetime
 from rapidfuzz import process,fuzz
 from pathlib import Path
 
+#CHANGE THE CHUNK SIZE HERE
 CHUNK_SIZE=10
 
 image_folder=Path("../images")
@@ -15,6 +16,26 @@ for file in image_folder.iterdir():
     if file.is_file():
         faculty.append(file.stem)
 
+def clean_score(value):
+    if value is None:
+        return None
+    if isinstance(value,(int,float)):
+        return value
+    if isinstance(value,str):
+        value=value.lower()
+        mapping={
+            "very bad":1,
+            "bad":3,
+            "average":5,
+            "good":7,
+            "very good":9,
+            "excellent":10,
+            "super strict":9,
+            "strict":8,
+            "lenient":7
+        }
+        return mapping.get(value.strip(),None)
+    return None
 def match_faculty(name,faculty):
     if not name:
         return None
@@ -30,7 +51,8 @@ def match_faculty(name,faculty):
 
     return None
 
-with open("clean2_1.json","r",encoding="utf-8") as f:
+#CHANGE THE FILE NAME HERE
+with open("clean3.json","r",encoding="utf-8") as f:
     data=json.load(f)
 
 total_chunks=(len(data)+CHUNK_SIZE-1)//CHUNK_SIZE
@@ -172,20 +194,28 @@ VALUES(?,?,?,?,?,?,?,?,?,?,?)
             strictness_count=row[8]
 
             if t.get("teaching_clarity") is not None:
-                clarity_sum+=t["teaching_clarity"]
-                clarity_count+=1
+                val=clean_score(t.get("teaching_clarity"))
+                if val is not None:
+                    clarity_sum+=val
+                    clarity_count+=1
 
             if t.get("assignment_load") is not None:
-                assignment_sum+=t["assignment_load"]
-                assignment_count+=1
+                val=clean_score(t.get("assignment_load"))
+                if val is not None:
+                    assignment_sum+=val
+                    assignment_count+=1
 
             if t.get("marking_leniency") is not None:
-                leniency_sum+=t["marking_leniency"]
-                leniency_count+=1
+                val=clean_score(t.get("marking_leniency"))
+                if val is not None:
+                    leniency_sum+=val
+                    leniency_count+=1
 
             if t.get("strictness") is not None:
-                strictness_sum+=t["strictness"]
-                strictness_count+=1
+                val=clean_score(t.get("strictness"))
+                if val is not None:
+                    strictness_sum+=val
+                    strictness_count+=1
 
             cur.execute("""
 UPDATE teachers
